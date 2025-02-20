@@ -1,4 +1,5 @@
+Flask==3.1.0
 pycorrector==1.1.2
-torch==1.13.1
+torch==2.6.0
 kenlm==0.2.0
 autocorrect==2.6.1
