@@ -1,6 +1,7 @@
 Flask==3.1.0
 flask-cors==5.0.0
 pycorrector==1.1.2
-torch==2.6.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.6.0+cpu
 kenlm==0.2.0
 autocorrect==2.6.1
