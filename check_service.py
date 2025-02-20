@@ -91,6 +91,7 @@ class CheckService:
         print("Processing data...")
 
         # 1. 先进行术语检查
+        term_errors = []  # 先初始化
         if terms:
             term_errors = self.check_terms(article, terms)
             all_errors.extend(term_errors)
