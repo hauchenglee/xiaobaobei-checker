@@ -7,7 +7,9 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             "http://localhost:5173",
-            "http://127.0.0.1:5173"  # 添加 IP 地址版本
+            "http://127.0.0.1:5173",  # 添加 IP 地址版本
+            "http://xiaobaobei-checker-vue:5173",  # 添加 Vue 容器
+            "http://srv415056.hstgr.cloud:5173"    # 添加实际域名
         ],
         "methods": ["POST", "OPTIONS"],
         "allow_headers": ["Content-Type"],
@@ -34,4 +36,4 @@ def check():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
