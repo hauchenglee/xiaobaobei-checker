@@ -1,7 +1,20 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from check_service import CheckService
 
 app = Flask(__name__)
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"  # 添加 IP 地址版本
+        ],
+        "methods": ["POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
+    }
+})
+
 check_service = CheckService()  # 创建service实例
 
 
@@ -21,4 +34,4 @@ def check():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
