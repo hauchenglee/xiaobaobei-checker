@@ -4,15 +4,33 @@ import torch
 import kenlm
 from autocorrect import Speller
 import ssl
+import os
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
 class CheckService:
     def __init__(self):
-        self.spell = Speller(lang='en')
-        self.cn_corrector = pycorrector.Corrector()
-        self.en_corrector = pycorrector.EnSpellCorrector()
+        # https://deepspeech.bj.bcebos.com/zh_lm/zh_giga.no_cna_cmn.prune01244.klm 下载了
+        # self.klm_path = './models/zh_giga.no_cna_cmn.prune01244.klm'
+        self.klm_path = '/opt/models/zh_giga.no_cna_cmn.prune01244.klm'
+
+        if not os.path.exists(self.klm_path):
+            raise RuntimeError(f"Model file not found at: {self.klm_path}")
+
+        try:
+            # 先创建 Corrector 实例
+            self.cn_corrector = pycorrector.Corrector()
+            # 然后设置语言模型路径
+            self.cn_corrector.set_language_model_path(self.klm_path)
+
+            self.spell = Speller(lang='en')
+            self.en_corrector = pycorrector.EnSpellCorrector()
+            print(f"Successfully initialized Chinese corrector with model at {self.klm_path}")
+        except Exception as e:
+            print(f"Error initializing Chinese corrector: {str(e)}")
+            raise
+
         # 增加 debug 输出
         print("Pycorrector version:", pycorrector.__version__)
 
