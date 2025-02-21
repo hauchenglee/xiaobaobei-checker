@@ -19,7 +19,6 @@ class CheckService:
             raise RuntimeError(f"Model file not found at: {self.klm_path}")
 
         try:
-            # 先创建 Corrector 实例
             self.cn_corrector = pycorrector.Corrector(language_model_path=self.klm_path)
             self.spell = Speller(lang='en')
             self.en_corrector = pycorrector.EnSpellCorrector()
@@ -46,6 +45,9 @@ class CheckService:
                     # error 格式为 (wrong, right, position)
                     if len(error) >= 3:
                         wrong, right, pos = error
+                        # 都转换成繁体保持一致
+                        wrong = pycorrector.simplified2traditional(wrong)
+                        right = pycorrector.simplified2traditional(right)
                         errors.append({
                             'original': wrong,
                             'correction': right,
@@ -151,7 +153,7 @@ class CheckService:
                         corrected_text[pos + len(original):]
                 )
 
-        # 繁体转简体
+        # 简体转繁体
         corrected_text = pycorrector.simplified2traditional(corrected_text)
 
         result = {
