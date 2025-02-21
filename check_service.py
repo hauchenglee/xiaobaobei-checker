@@ -20,10 +20,7 @@ class CheckService:
 
         try:
             # 先创建 Corrector 实例
-            self.cn_corrector = pycorrector.Corrector()
-            # 然后设置语言模型路径
-            self.cn_corrector.set_language_model_path(self.klm_path)
-
+            self.cn_corrector = pycorrector.Corrector(language_model_path=self.klm_path)
             self.spell = Speller(lang='en')
             self.en_corrector = pycorrector.EnSpellCorrector()
             print(f"Successfully initialized Chinese corrector with model at {self.klm_path}")
