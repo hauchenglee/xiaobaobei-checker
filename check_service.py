@@ -4,15 +4,29 @@ import torch
 import kenlm
 from autocorrect import Speller
 import ssl
+import os
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
 class CheckService:
     def __init__(self):
-        self.spell = Speller(lang='en')
-        self.cn_corrector = pycorrector.Corrector()
-        self.en_corrector = pycorrector.EnSpellCorrector()
+        # https://deepspeech.bj.bcebos.com/zh_lm/zh_giga.no_cna_cmn.prune01244.klm 下载了
+        # self.klm_path = './models/zh_giga.no_cna_cmn.prune01244.klm'
+        self.klm_path = '/opt/models/zh_giga.no_cna_cmn.prune01244.klm'
+
+        if not os.path.exists(self.klm_path):
+            raise RuntimeError(f"Model file not found at: {self.klm_path}")
+
+        try:
+            self.cn_corrector = pycorrector.Corrector(language_model_path=self.klm_path)
+            self.spell = Speller(lang='en')
+            self.en_corrector = pycorrector.EnSpellCorrector()
+            print(f"Successfully initialized Chinese corrector with model at {self.klm_path}")
+        except Exception as e:
+            print(f"Error initializing Chinese corrector: {str(e)}")
+            raise
+
         # 增加 debug 输出
         print("Pycorrector version:", pycorrector.__version__)
 
@@ -31,6 +45,9 @@ class CheckService:
                     # error 格式为 (wrong, right, position)
                     if len(error) >= 3:
                         wrong, right, pos = error
+                        # 都转换成繁体保持一致
+                        wrong = pycorrector.simplified2traditional(wrong)
+                        right = pycorrector.simplified2traditional(right)
                         errors.append({
                             'original': wrong,
                             'correction': right,
@@ -136,7 +153,7 @@ class CheckService:
                         corrected_text[pos + len(original):]
                 )
 
-        # 繁体转简体
+        # 简体转繁体
         corrected_text = pycorrector.simplified2traditional(corrected_text)
 
         result = {
