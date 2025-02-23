@@ -5,6 +5,8 @@ import kenlm
 from autocorrect import Speller
 import ssl
 import os
+import anthropic
+import json
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -29,6 +31,157 @@ class CheckService:
 
         # 增加 debug 输出
         print("Pycorrector version:", pycorrector.__version__)
+
+    def ai_service(self, data):
+
+        prompt = '''
+You are a Traditional Chinese text proofreading expert. Check for incorrect characters in the input text (only check for wrong characters, not semantics or grammar).
+
+Position calculation rules:
+1. Start counting from 0
+2. Each character (including punctuation) counts as one position
+3. Must return the exact position of the incorrect character in the original text
+
+For example, in the text: "手雞". If "雞" is incorrect, its position should be 1
+
+Additionally, prioritize corrections based on the user-defined terms provided. If a character sequence matches a user-defined term but may have alternative usages in other contexts, still prioritize the user-defined correction.
+
+Please output in JSON format, including all found incorrect characters. For each error, include: original text, corrected text, and position. Focus only on clear character errors, avoid over-correction.
+
+The Input JSON Schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "article": {
+      "type": "string",
+      "description": "需要检查错字的文章内容，必须为繁体中文"
+    },
+    "terms": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "description": "用户自定义的词库，用于优先修正"
+      }
+    },
+    "is_ai": {
+      "type": "boolean",
+      "description": "其他系统需要的参数，无需理会"
+    }
+  },
+  "required": [
+    "article",
+    "terms",
+    "is_ai"
+  ],
+  "additionalProperties": false
+}
+```
+
+The input json example:
+
+```json
+{
+  "article": "如果您是設計並居住在台北市的低收入戶，可以申請育兒津鐵，如果有身心障礙證明更好。",
+  "terms": [
+    "低收入戶",
+    "中低收入戶",
+    "身心障礙證明",
+    "身心障礙者生活補助",
+    "育兒津貼",
+    "托育補助",
+    "人籍合一",
+    "設籍並居住"
+  ],
+  "is_ai": false
+}
+```
+
+The output JSON Schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "original": {
+            "type": "string",
+            "description": "原始的错误文字"
+          },
+          "correction": {
+            "type": "string",
+            "description": "修正后的正确文字"
+          },
+          "position": {
+            "type": "integer",
+            "description": "错误文字在原文中的起始位置（从0开始）"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+The Output Jsom example:
+
+```json
+{
+{
+  "errors": [
+    {
+      "correction": "設籍並居住",
+      "original": "設計並居住",
+      "position": 4,
+      "type": "term_mismatch"
+    },
+    {
+      "correction": "中低收入戶",
+      "original": "的低收入戶",
+      "position": 13,
+      "type": "term_mismatch"
+    },
+    {
+      "correction": "育兒津貼",
+      "original": "育兒津鐵",
+      "position": 23,
+      "type": "term_mismatch"
+    }
+  ]
+}
+```
+
+You must strictly adhere to the output JSON schema when returning the response.
+
+The actual input content:
+
+''' + f"{data}"
+
+        client = anthropic.Anthropic(
+            api_key=os.environ.get("ANTHROPIC_API_KEY")
+        )
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=1024,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        # 解析JSON
+        data = json.loads(message.content[0].text)
+
+        # 提取errors列表
+        errors = data['errors']
+
+        return errors
 
     def check_chinese(self, text):
         try:
@@ -96,6 +249,7 @@ class CheckService:
     def process_data(self, data):
         article = data.get('article', '')
         terms = data.get('terms', [])
+        is_ai = data.get('is_ai', False)
 
         if not article:
             return {
@@ -107,37 +261,41 @@ class CheckService:
         all_errors = []
         print("Processing data...")
 
-        # 1. 先进行术语检查
-        term_errors = []  # 先初始化
-        if terms:
-            term_errors = self.check_terms(article, terms)
-            all_errors.extend(term_errors)
+        if is_ai:
+            errors = self.ai_service(data)
+            all_errors.extend(errors)
+        else:
+            # 1. 先进行术语检查
+            term_errors = []  # 先初始化
+            if terms:
+                term_errors = self.check_terms(article, terms)
+                all_errors.extend(term_errors)
 
-        # 2. 创建术语检查已覆盖的位置范围
-        covered_ranges = []
-        for error in term_errors:
-            pos = error['position']
-            length = len(error['original'])
-            covered_ranges.append((pos, pos + length))
+            # 2. 创建术语检查已覆盖的位置范围
+            covered_ranges = []
+            for error in term_errors:
+                pos = error['position']
+                length = len(error['original'])
+                covered_ranges.append((pos, pos + length))
 
-        # 3. 中文错别字检查，但跳过已被术语检查覆盖的部分
-        chinese_errors = self.check_chinese(article)
-        for error in chinese_errors:
-            pos = error['position']
-            length = len(error['original'])
+            # 3. 中文错别字检查，但跳过已被术语检查覆盖的部分
+            chinese_errors = self.check_chinese(article)
+            for error in chinese_errors:
+                pos = error['position']
+                length = len(error['original'])
 
-            # 检查这个位置是否已被术语检查覆盖
-            is_covered = False
-            for start, end in covered_ranges:
-                if pos >= start and pos < end:
-                    is_covered = True
-                    break
+                # 检查这个位置是否已被术语检查覆盖
+                is_covered = False
+                for start, end in covered_ranges:
+                    if pos >= start and pos < end:
+                        is_covered = True
+                        break
 
-            if not is_covered:
-                all_errors.append(error)
+                if not is_covered:
+                    all_errors.append(error)
 
-        # 按位置排序错误
-        all_errors.sort(key=lambda x: x['position'])
+            # 按位置排序错误
+            all_errors.sort(key=lambda x: x['position'])
 
         # 生成修正后的文本
         corrected_text = article
@@ -163,7 +321,6 @@ class CheckService:
             "corrected_text": corrected_text,
             "errors": [
                 {
-                    "type": error['type'],
                     "original": error['original'],
                     "correction": error['correction'],
                     "position": error['position']
