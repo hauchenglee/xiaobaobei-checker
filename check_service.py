@@ -1,12 +1,10 @@
-import re
-import pycorrector
-import torch
-import kenlm
-from autocorrect import Speller
-import ssl
-import os
-import anthropic
 import json
+import os
+import ssl
+
+import anthropic
+import pycorrector
+from autocorrect import Speller
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -175,11 +173,17 @@ The actual input content:
             ]
         )
 
+        print("ANTHROPIC_API_KEY: " + os.environ.get("ANTHROPIC_API_KEY"))
+        print("claude-3-5-sonnet-20240620 message: ")
+        print(message)
+
         # 解析JSON
         data = json.loads(message.content[0].text)
 
         # 提取errors列表
         errors = data['errors']
+        print("errors: ")
+        print(errors)
 
         return errors
 
