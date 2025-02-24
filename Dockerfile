@@ -1,6 +1,9 @@
 # 使用 Python 3.11 完整版本作为基础镜像
 FROM python:3.11
 
+# 設置 Python 不緩衝輸出
+ENV PYTHONUNBUFFERED=1
+
 # 只安裝最基本的工具
 RUN apt-get update && apt-get install -y \
     curl \

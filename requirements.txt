@@ -6,3 +6,4 @@ torch==2.6.0+cpu
 #torch==2.6.0
 kenlm==0.2.0
 autocorrect==2.6.1
+anthropic==0.46.0
