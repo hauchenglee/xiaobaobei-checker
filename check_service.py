@@ -140,7 +140,10 @@ class CheckService:
         print("poe response:")
         print(full_response)
 
-        return full_response
+        data = json.loads(full_response)
+        corrected_text = data['corrected_text']
+
+        return corrected_text
 
     def claude_service(self, data):
 
