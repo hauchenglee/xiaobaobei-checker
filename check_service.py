@@ -7,6 +7,7 @@ import ssl
 import os
 import json
 import anthropic
+from poe_api_wrapper import PoeApi
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -32,9 +33,7 @@ class CheckService:
         # 增加 debug 输出
         print("Pycorrector version:", pycorrector.__version__)
 
-    def ai_service(self, data):
-
-        prompt = '''
+        self.prompt = '''
 # 角色定义
 你是繁体中文文本校对专家，专门检查错别字和错误用字（依据台湾教育部标准）。
 
@@ -119,7 +118,29 @@ class CheckService:
 - 自定义词库中的词组必须与原文保持相同字数
 
 当前输入内容：
-''' + f"{data}"
+'''
+
+    def poe_service(self, data):
+        # poe api key generate: https://poe.com/api_key
+        # 初始化 PoeApi 客户端
+        token = ""
+        client = PoeApi(token)
+        bot = "Claude-3.5-Sonnet-200k"
+
+        content = self.prompt + f"{data}"
+        response_gen = client.send_message(bot, content)
+
+        full_response = ""
+        for chunk in response_gen:
+            full_response += chunk["response"].lstrip()
+
+        print(full_response)
+
+        return full_response
+
+    def claude_service(self, data):
+
+        content = self.prompt + f"{data}"
 
         client = anthropic.Anthropic(
             api_key=os.environ.get("ANTHROPIC_API_KEY")
@@ -128,7 +149,7 @@ class CheckService:
             model="claude-3-5-sonnet-20240620",
             max_tokens=1024,
             messages=[
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": content}
             ]
         )
 
@@ -241,7 +262,7 @@ class CheckService:
 
         if is_ai:
             print("AI mode")
-            corrected_text = self.ai_service(data)
+            corrected_text = self.poe_service(data)
             all_errors = self.find_differences(article, corrected_text)
 
             result = {
