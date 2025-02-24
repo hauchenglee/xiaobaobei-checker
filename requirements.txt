@@ -7,3 +7,4 @@ torch==2.6.0+cpu
 kenlm==0.2.0
 autocorrect==2.6.1
 anthropic==0.46.0
+poe-api-wrapper==1.7.0

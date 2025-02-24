@@ -123,8 +123,11 @@ class CheckService:
     def poe_service(self, data):
         # poe api key generate: https://poe.com/api_key
         # 初始化 PoeApi 客户端
-        token = ""
-        client = PoeApi(token)
+        cookies = {
+            'p-b': '',
+            'p-lat': ''
+        }
+        client = PoeApi(tokens=cookies)
         bot = "Claude-3.5-Sonnet-200k"
 
         content = self.prompt + f"{data}"
@@ -134,6 +137,7 @@ class CheckService:
         for chunk in response_gen:
             full_response += chunk["response"].lstrip()
 
+        print("poe response:")
         print(full_response)
 
         return full_response
