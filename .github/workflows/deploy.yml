@@ -62,6 +62,8 @@ jobs:
             cat > .env << EOF
             VERSION=${{ needs.build-and-push-docker.outputs.tag }}
             ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+            POE_COOKIE_P_B=${{ secrets.POE_COOKIE_P_B }}
+            POE_COOKIE_P_LAT=${{ secrets.POE_COOKIE_P_LAT }}
             EOF
             docker compose pull server
             docker compose up -d server

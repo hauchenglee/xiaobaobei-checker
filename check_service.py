@@ -124,8 +124,8 @@ class CheckService:
         # poe api key generate: https://poe.com/api_key
         # 初始化 PoeApi 客户端
         cookies = {
-            'p-b': '',
-            'p-lat': ''
+            'p-b': os.environ.get("POE_COOKIE_P_B"),
+            'p-lat': os.environ.get("POE_COOKIE_P_LAT")
         }
         client = PoeApi(tokens=cookies)
         bot = "Claude-3.5-Sonnet-200k"
