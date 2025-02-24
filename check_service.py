@@ -50,21 +50,11 @@ class CheckService:
 - 标点符号
 - 表达风格
 
-# 位置计算规则
-1. **字符索引**：
-   - 起始位置为0
-   - 包含所有字符（含标点、空格）
-   - 每个错误修正必须保持原字数不变
-   - 严格一对一替换，确保position准确性
-
-2. **位置验证**：
-   - 替换前后字数必须相同
-   - 逐字重建验证位置
-   - 示例验证：
-     输入：「如果您是平果公司」
-     错误：「平果」→「蘋果」
-     位置：4
-     验证：[0:如][1:果][2:您][3:是][4:平][5:果][6:公][7:司]
+# 修正規則
+- 每個錯誤修正必須保持原字數不變
+- 示例：
+  輸入：「如果您是平果公司」
+  輸出：「如果您是蘋果公司」
 
 # 输入输出规范
 **输入JSON Schema**：
@@ -78,7 +68,7 @@ class CheckService:
   },
   "required": ["article", "terms", "is_ai"]
 }
-````
+```
 
 **输出JSON Schema**：
 
@@ -86,20 +76,13 @@ class CheckService:
 {
   "type": "object",
   "properties": {
-    "errors": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "original": {"type": "string"},
-          "correction": {"type": "string"},
-          "position": {"type": "integer"}
-        },
-        "additionalProperties": false
-      }
-    }
+    "corrected_text": {
+      "type": "string",
+      "description": "修正之后的语句"
+    },
+    "additionalProperties": false
   },
-  "required": ["errors"]
+  "required": ["corrected_text"]
 }
 ```
 
@@ -124,10 +107,7 @@ class CheckService:
 
 ```json
 {
-  "errors": [
-    {"original": "平果", "correction": "蘋果", "position": 4},
-    {"original": "育兒津鐵", "correction": "育兒津貼", "position": 16}
-  ]
+  "corrected_text": "如果您是蘋果公司的員工，可以申請育兒津貼。"
 }
 ```
 
@@ -159,10 +139,40 @@ class CheckService:
         # 解析JSON
         data = json.loads(message.content[0].text)
 
-        # 提取errors列表
-        errors = data['errors']
-        print("errors: ")
-        print(errors)
+        # 提取corrected_text列表
+        corrected_text = data['corrected_text']
+        print("corrected_text: ")
+        print(corrected_text)
+
+        return corrected_text
+
+    def find_differences(self, original_text, corrected_text):
+        errors = []
+        i = 0
+        while i < len(original_text):
+            if i >= len(corrected_text):
+                break
+
+            if original_text[i] != corrected_text[i]:
+                j = 1
+                while (i + j <= len(original_text) and
+                       i + j <= len(corrected_text) and
+                       original_text[i:i + j] != corrected_text[i:i + j]):
+                    j += 1
+
+                original = original_text[i:i + j - 1]
+                correction = corrected_text[i:i + j - 1]
+
+                if len(original) == len(correction):
+                    errors.append({
+                        "original": original,
+                        "correction": correction,
+                        "position": i
+                    })
+
+                i += j - 1
+            else:
+                i += 1
 
         return errors
 
@@ -248,8 +258,22 @@ class CheckService:
 
         if is_ai:
             print("AI mode")
-            errors = self.ai_service(data)
-            all_errors.extend(errors)
+            corrected_text = self.ai_service(data)
+            all_errors = self.find_differences(article, corrected_text)
+
+            result = {
+                "status": "success",
+                "message": "检查完成",
+                "original_text": article,
+                "corrected_text": corrected_text,  # 直接使用 AI 返回的 corrected_text
+                "errors": [
+                    {
+                        "original": error['original'],
+                        "correction": error['correction'],
+                        "position": error['position']
+                    } for error in all_errors
+                ]
+            }
         else:
             print("Human mode")
             # 1. 先进行术语检查
@@ -284,35 +308,35 @@ class CheckService:
             # 按位置排序错误
             all_errors.sort(key=lambda x: x['position'])
 
-        # 生成修正后的文本
-        corrected_text = article
-        if all_errors:
-            # 从后向前替换，避免位置偏移
-            for error in reversed(all_errors):
-                pos = error['position']
-                original = error['original']
-                correction = error['correction']
-                corrected_text = (
-                        corrected_text[:pos] +
-                        correction +
-                        corrected_text[pos + len(original):]
-                )
+            # 生成修正后的文本
+            corrected_text = article
+            if all_errors:
+                # 从后向前替换，避免位置偏移
+                for error in reversed(all_errors):
+                    pos = error['position']
+                    original = error['original']
+                    correction = error['correction']
+                    corrected_text = (
+                            corrected_text[:pos] +
+                            correction +
+                            corrected_text[pos + len(original):]
+                    )
 
-        # 简体转繁体
-        corrected_text = pycorrector.simplified2traditional(corrected_text)
+            # 简体转繁体
+            corrected_text = pycorrector.simplified2traditional(corrected_text)
 
-        result = {
-            "status": "success",
-            "message": "检查完成",
-            "original_text": article,
-            "corrected_text": corrected_text,
-            "errors": [
-                {
-                    "original": error['original'],
-                    "correction": error['correction'],
-                    "position": error['position']
-                } for error in all_errors
-            ]
-        }
+            result = {
+                "status": "success",
+                "message": "检查完成",
+                "original_text": article,
+                "corrected_text": corrected_text,
+                "errors": [
+                    {
+                        "original": error['original'],
+                        "correction": error['correction'],
+                        "position": error['position']
+                    } for error in all_errors
+                ]
+            }
 
         return result
