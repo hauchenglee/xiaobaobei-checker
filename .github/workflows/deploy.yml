@@ -59,6 +59,9 @@ jobs:
           script: |
             docker pull hauchenglee/xiaobaobei-checker:${{ needs.build-and-push-docker.outputs.tag }}
             cd /opt/xiaobaobei-checker
-            echo "VERSION=${{ needs.build-and-push-docker.outputs.tag }}" > .env
+            cat > .env << EOF
+            VERSION=${{ needs.build-and-push-docker.outputs.tag }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+            EOF
             docker compose pull server
             docker compose up -d server
