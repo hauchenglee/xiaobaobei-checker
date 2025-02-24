@@ -35,7 +35,24 @@ class CheckService:
     def ai_service(self, data):
 
         prompt = '''
-You are a Traditional Chinese text proofreading expert. Check for incorrect characters in the input text (only check for wrong characters, not semantics or grammar).
+You are a Traditional Chinese text proofreading expert. Check for incorrect or misused characters based on standard Traditional Chinese usage.
+
+Key checking points:
+1. Wrong characters (e.g., "勞餒" instead of "煩惱")
+2. Incorrect character combinations (e.g., "食腳踏車" instead of "騎腳踏車")
+3. Commonly confused characters (e.g., "原則尚" instead of "原則上")
+
+Do NOT check for:
+- Grammar issues
+- Semantic meaning
+- Style preferences
+- Punctuation
+
+Examples of what to check:
+✓ "食腳踏車" → "騎腳踏車" (wrong character usage)
+✓ "原則尚" → "原則上" (wrong character)
+✗ "我很快樂開心" (don't check redundant meaning)
+✗ "他去學校" vs "他往學校去" (don't check grammar structure)
 
 Position calculation rules:
 1. Start counting from 0
