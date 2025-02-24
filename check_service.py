@@ -35,87 +35,52 @@ class CheckService:
     def ai_service(self, data):
 
         prompt = '''
-You are a Traditional Chinese text proofreading expert. Check for incorrect or misused characters based on standard Traditional Chinese usage.
+# 角色定义
+你是繁体中文文本校对专家，专门检查错别字和错误用字（依据台湾教育部标准）。
 
-Key checking points:
-1. Wrong characters (e.g., "勞餒" instead of "煩惱")
-2. Incorrect character combinations (e.g., "食腳踏車" instead of "騎腳踏車")
-3. Commonly confused characters (e.g., "原則尚" instead of "原則上")
+# 核心检查规则
+**需检查**：
+1. 同音异字错误（例：「平果」→「蘋果」）
+2. 常见混淆字（例：「原則尚」→「原則上」）
+3. 用户自定义词库的优先匹配（`terms`参数中的词汇）
 
-Do NOT check for:
-- Grammar issues
-- Semantic meaning
-- Style preferences
-- Punctuation
+**不检查**：
+- 语法结构
+- 语义合理性
+- 标点符号
+- 表达风格
 
-Examples of what to check:
-✓ "食腳踏車" → "騎腳踏車" (wrong character usage)
-✓ "原則尚" → "原則上" (wrong character)
-✗ "我很快樂開心" (don't check redundant meaning)
-✗ "他去學校" vs "他往學校去" (don't check grammar structure)
+# 位置计算规则
+1. **字符索引**：
+   - 起始位置为0
+   - 包含所有字符（含标点、空格）
+   - 每个错误修正必须保持原字数不变
+   - 严格一对一替换，确保position准确性
 
-Position calculation rules:
-1. Start counting from 0
-2. Each character (including punctuation) counts as one position
-3. Must return the exact position of the incorrect character in the original text
+2. **位置验证**：
+   - 替换前后字数必须相同
+   - 逐字重建验证位置
+   - 示例验证：
+     输入：「如果您是平果公司」
+     错误：「平果」→「蘋果」
+     位置：4
+     验证：[0:如][1:果][2:您][3:是][4:平][5:果][6:公][7:司]
 
-For example, in the text: "手雞". If "雞" is incorrect, its position should be 1
-
-Additionally, prioritize corrections based on the user-defined terms provided. If a character sequence matches a user-defined term but may have alternative usages in other contexts, still prioritize the user-defined correction.
-
-Please output in JSON format, including all found incorrect characters. For each error, include: original text, corrected text, and position. Focus only on clear character errors, avoid over-correction.
-
-The Input JSON Schema:
-
+# 输入输出规范
+**输入JSON Schema**：
 ```json
 {
   "type": "object",
   "properties": {
-    "article": {
-      "type": "string",
-      "description": "需要检查错字的文章内容，必须为繁体中文"
-    },
-    "terms": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "description": "用户自定义的词库，用于优先修正"
-      }
-    },
-    "is_ai": {
-      "type": "boolean",
-      "description": "其他系统需要的参数，无需理会"
-    }
+    "article": {"type": "string", "description": "待校对文本（必须为繁体中文）"},
+    "terms": {"type": "array", "items": {"type": "string"}, "description": "优先匹配的自定义词库"},
+    "is_ai": {"type": "boolean", "description": "系统保留参数"}
   },
-  "required": [
-    "article",
-    "terms",
-    "is_ai"
-  ],
-  "additionalProperties": false
+  "required": ["article", "terms", "is_ai"]
 }
-```
+````
 
-The input json example:
-
-```json
-{
-  "article": "如果您是設計並居住在台北市的低收入戶，可以申請育兒津鐵，如果有身心障礙證明更好。",
-  "terms": [
-    "低收入戶",
-    "中低收入戶",
-    "身心障礙證明",
-    "身心障礙者生活補助",
-    "育兒津貼",
-    "托育補助",
-    "人籍合一",
-    "設籍並居住"
-  ],
-  "is_ai": false
-}
-```
-
-The output JSON Schema:
+**输出JSON Schema**：
 
 ```json
 {
@@ -126,59 +91,54 @@ The output JSON Schema:
       "items": {
         "type": "object",
         "properties": {
-          "original": {
-            "type": "string",
-            "description": "原始的错误文字"
-          },
-          "correction": {
-            "type": "string",
-            "description": "修正后的正确文字"
-          },
-          "position": {
-            "type": "integer",
-            "description": "错误文字在原文中的起始位置（从0开始）"
-          }
+          "original": {"type": "string"},
+          "correction": {"type": "string"},
+          "position": {"type": "integer"}
         },
         "additionalProperties": false
       }
     }
   },
-  "additionalProperties": false
+  "required": ["errors"]
 }
 ```
 
-The Output Jsom example:
+# 处理优先级
+
+1. **优先匹配自定义词库**：若文本中存在`terms`中的词汇，直接替换（即使单字正确）
+2. **通用规则检查**：未匹配`terms`时，应用形近/同音字修正
+
+# 示例说明
+
+**输入示例**：
 
 ```json
 {
+  "article": "如果您是平果公司的員工，可以申請育兒津鐵。",
+  "terms": ["設籍並居住", "育兒津貼"],
+  "is_ai": true
+}
+```
+
+**正确输出**：
+
+```json
 {
   "errors": [
-    {
-      "correction": "設籍並居住",
-      "original": "設計並居住",
-      "position": 4,
-      "type": "term_mismatch"
-    },
-    {
-      "correction": "中低收入戶",
-      "original": "的低收入戶",
-      "position": 13,
-      "type": "term_mismatch"
-    },
-    {
-      "correction": "育兒津貼",
-      "original": "育兒津鐵",
-      "position": 23,
-      "type": "term_mismatch"
-    }
+    {"original": "平果", "correction": "蘋果", "position": 4},
+    {"original": "育兒津鐵", "correction": "育兒津貼", "position": 16}
   ]
 }
 ```
 
-You must strictly adhere to the output JSON schema when returning the response.
+# 严格约束
 
-The actual input content:
+- 仅输出JSON格式，禁用Markdown
+- 错误必须符合Schema定义
+- 自定义词库优先于通用规则
+- 自定义词库中的词组必须与原文保持相同字数
 
+当前输入内容：
 ''' + f"{data}"
 
         client = anthropic.Anthropic(
