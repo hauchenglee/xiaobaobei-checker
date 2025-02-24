@@ -251,9 +251,11 @@ The actual input content:
         return errors
 
     def process_data(self, data):
+        print(data)
         article = data.get('article', '')
         terms = data.get('terms', [])
         is_ai = data.get('is_ai', False)
+        print(f"is_ai: {is_ai}")
 
         if not article:
             return {
@@ -266,9 +268,11 @@ The actual input content:
         print("Processing data...")
 
         if is_ai:
+            print("AI mode")
             errors = self.ai_service(data)
             all_errors.extend(errors)
         else:
+            print("Human mode")
             # 1. 先进行术语检查
             term_errors = []  # 先初始化
             if terms:
