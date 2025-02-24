@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 
 # 声明端口
-EXPOSE 5000
+EXPOSE 5001
 
 # 设置启动命令
 CMD ["python", "app.py"]
