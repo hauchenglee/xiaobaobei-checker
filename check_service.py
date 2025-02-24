@@ -149,31 +149,14 @@ class CheckService:
     def find_differences(self, original_text, corrected_text):
         errors = []
         i = 0
-        while i < len(original_text):
-            if i >= len(corrected_text):
-                break
-
+        while i < len(original_text) and i < len(corrected_text):
             if original_text[i] != corrected_text[i]:
-                j = 1
-                while (i + j <= len(original_text) and
-                       i + j <= len(corrected_text) and
-                       original_text[i:i + j] != corrected_text[i:i + j]):
-                    j += 1
-
-                original = original_text[i:i + j - 1]
-                correction = corrected_text[i:i + j - 1]
-
-                if len(original) == len(correction):
-                    errors.append({
-                        "original": original,
-                        "correction": correction,
-                        "position": i
-                    })
-
-                i += j - 1
-            else:
-                i += 1
-
+                errors.append({
+                    "original": original_text[i],
+                    "correction": corrected_text[i],
+                    "position": i
+                })
+            i += 1
         return errors
 
     def check_chinese(self, text):
