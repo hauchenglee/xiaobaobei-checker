@@ -12,8 +12,8 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class KenlmService:
     def __init__(self):
         # https://deepspeech.bj.bcebos.com/zh_lm/zh_giga.no_cna_cmn.prune01244.klm 下载了
-        self.klm_path = './models/zh_giga.no_cna_cmn.prune01244.klm'
-        # self.klm_path = '/opt/models/zh_giga.no_cna_cmn.prune01244.klm'
+        # self.klm_path = './models/zh_giga.no_cna_cmn.prune01244.klm'
+        self.klm_path = '/opt/models/zh_giga.no_cna_cmn.prune01244.klm'
 
         if not os.path.exists(self.klm_path):
             raise RuntimeError(f"Model file not found at: {self.klm_path}")
