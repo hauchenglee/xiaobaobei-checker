@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from check_service import CheckService
+
+from ai_process import AIProcess
+from ai_service import AIService
+from kenlm_service import KenlmService
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -9,7 +12,7 @@ CORS(app, resources={
             "http://localhost:5173",
             "http://127.0.0.1:5173",  # 添加 IP 地址版本
             "http://xiaobaobei-checker-vue:5173",  # 添加 Vue 容器
-            "http://srv415056.hstgr.cloud:5173"    # 添加实际域名
+            "http://srv415056.hstgr.cloud:5173"  # 添加实际域名
         ],
         "methods": ["POST", "OPTIONS"],
         "allow_headers": ["Content-Type"],
@@ -17,7 +20,9 @@ CORS(app, resources={
     }
 })
 
-check_service = CheckService()  # 创建service实例
+ai_service = AIService()
+ai_process = AIProcess()
+kenlm_service = KenlmService()
 
 
 @app.route('/')
@@ -28,9 +33,25 @@ def hello_world():  # put application's code here
 @app.route('/check', methods=['POST'])
 def check():
     data = request.get_json()
+    article = data.get('article', '')
+    if not article:
+        return {
+            "status": "error",
+            "message": "文章内容不能为空",
+            "errors": []
+        }
 
-    # 调用service处理数据
-    result = check_service.process_data(data)
+    model = data.get('model', 'none')
+    if model != 'KenLM':
+        corrected_text = ''
+        if model == 'Claude3.5-Sonnet':
+            corrected_text = ai_service.claude_service(data)
+        elif model.startswith('Poe'):
+            bot = model[4:]
+            corrected_text = ai_service.poe_service(data, bot)
+        result = ai_process.process_data(article, corrected_text)
+    else:
+        result = kenlm_service.process_data(data)
 
     return jsonify(result)
 
