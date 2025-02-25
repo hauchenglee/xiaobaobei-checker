@@ -131,11 +131,27 @@ class CheckService:
         bot = "Claude-3.5-Sonnet-200k"
 
         content = self.prompt + f"{data}"
-        response_gen = client.send_message(bot, content)
+        need_chat_code = False  # 是否要连续对话
 
-        full_response = ""
-        for chunk in response_gen:
-            full_response += chunk["response"].lstrip()
+        if need_chat_code:
+            # 初始化 chatCode
+            chat_code = None
+            if chat_code:
+                response_gen = client.send_message(bot, content, chatCode=chat_code)
+            else:
+                response_gen = client.send_message(bot, content)
+
+            full_response = ""
+            for chunk in response_gen:
+                if 'chatCode' in chunk and not chat_code:
+                    chat_code = chunk['chatCode']
+                    full_response += chunk["response"].lstrip()
+        else:
+            response_gen = client.send_message(bot, content)
+
+            full_response = ""
+            for chunk in response_gen:
+                full_response += chunk["response"].lstrip()
 
         print("poe response:")
         print(full_response)
