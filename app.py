@@ -20,10 +20,6 @@ CORS(app, resources={
     }
 })
 
-ai_service = AIService()
-ai_process = AIProcess()
-kenlm_service = KenlmService()
-
 
 @app.route('/')
 def hello_world():  # put application's code here
@@ -43,14 +39,19 @@ def check():
 
     model = data.get('model', 'none')
     if model != 'KenLM':
-        corrected_text = ''
-        if model == 'Claude3.5-Sonnet':
-            corrected_text = ai_service.claude_service(data)
-        elif model.startswith('Poe'):
+        ai_service = AIService()
+        ai_process = AIProcess()
+        message = ''
+        if model.lower().startswith('claude'):
+            bot = model
+            message = ai_service.claude_service(data, bot)
+        elif model.lower().startswith('poe'):
             bot = model[4:]
-            corrected_text = ai_service.poe_service(data, bot)
-        result = ai_process.process_data(article, corrected_text)
+            message = ai_service.poe_service(data, bot)
+            print(message)
+        result = ai_process.process_data(article, message)
     else:
+        kenlm_service = KenlmService()
         result = kenlm_service.process_data(data)
 
     return jsonify(result)
