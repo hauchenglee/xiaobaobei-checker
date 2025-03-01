@@ -35,11 +35,11 @@ jobs:
 
       # Step 4: 构建 Docker 镜像
       - name: Build Docker image
-        run: docker build -t hauchenglee/xiaobaobei-checker:${{ env.TAG }} .
+        run: docker build -t hauchenglee/xiaobaobei-checker-server:${{ env.TAG }} .
 
       # Step 5: 推送 Docker 镜像到 Docker Hub
       - name: Push Docker image to Docker Hub
-        run: docker push hauchenglee/xiaobaobei-checker:${{ env.TAG }}
+        run: docker push hauchenglee/xiaobaobei-checker-server:${{ env.TAG }}
 
   deploy-to-centos:
     name: Deploy to CentOS Server
@@ -57,7 +57,7 @@ jobs:
           port: 22
           command_timeout: "30m"  # 增加超時時間，確保有足夠時間下載
           script: |
-            docker pull hauchenglee/xiaobaobei-checker:${{ needs.build-and-push-docker.outputs.tag }}
+            docker pull hauchenglee/xiaobaobei-checker-server:${{ needs.build-and-push-docker.outputs.tag }}
             cd /opt/xiaobaobei-checker
             cat > .env << EOF
             VERSION=${{ needs.build-and-push-docker.outputs.tag }}
