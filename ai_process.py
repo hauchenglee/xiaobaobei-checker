@@ -41,7 +41,7 @@ class AIProcess:
 
     def process_data(self, article, message):
         response = str(message)
-        corrected_text = json.loads(message.content[0].text)['corrected_text']
+        corrected_text = json.loads(message)['corrected_text']
         all_errors = self.find_differences(article.replace(",", "，"), corrected_text.replace(",", "，"))
         result = {
             "status": "success",

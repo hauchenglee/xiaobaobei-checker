@@ -100,17 +100,29 @@ class AIService:
             else:
                 response_gen = client.send_message(bot, content)
 
+            last_text = ""
             full_response = ""
             for chunk in response_gen:
                 if 'chatCode' in chunk and not chat_code:
                     chat_code = chunk['chatCode']
-                    full_response += chunk["response"].lstrip()
+                last_text = chunk["text"].lstrip()  # 只保存最後一個chunk的text
+
         else:
             response_gen = client.send_message(bot, content)
 
+            last_text = ""
             full_response = ""
             for chunk in response_gen:
-                full_response += chunk["response"].lstrip()
+                last_text = chunk["text"].lstrip()  # 只保存最後一個chunk的text
+
+        # 提取最後的JSON部分
+        start_index = last_text.rfind('```json')
+        end_index = last_text.rfind('```')
+        if start_index != -1 and end_index != -1:
+            json_text = last_text[start_index:end_index+3]
+            # 處理markdown code block
+            json_text = json_text.replace('```json\n', '').replace('\n```', '')
+            full_response = json_text
 
         return full_response
 
@@ -128,5 +140,7 @@ class AIService:
                 {"role": "user", "content": content}
             ]
         )
+
+        message = message.content[0].text
 
         return message
