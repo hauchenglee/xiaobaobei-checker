@@ -1,10 +1,10 @@
 Flask==3.1.0
 flask-cors==5.0.0
-pycorrector==1.1.2
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.6.0+cpu
+#pycorrector==1.1.2
+#--extra-index-url https://download.pytorch.org/whl/cpu
+#torch==2.6.0+cpu
 #torch==2.6.0
-kenlm==0.2.0
-autocorrect==2.6.1
+#kenlm==0.2.0
+#autocorrect==2.6.1
 anthropic==0.46.0
 poe-api-wrapper==1.7.0

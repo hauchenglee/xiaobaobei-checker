@@ -3,7 +3,8 @@ from flask_cors import CORS
 
 from ai_process import AIProcess
 from ai_service import AIService
-from kenlm_service import KenlmService
+
+# from kenlm_service import KenlmService
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -51,8 +52,13 @@ def check():
             print(message)
         result = ai_process.process_data(article, message)
     else:
-        kenlm_service = KenlmService()
-        result = kenlm_service.process_data(data)
+        result = {
+            "status": "error",
+            "message": "模型選擇錯誤",
+            "errors": []
+        }
+        # kenlm_service = KenlmService()
+        # result = kenlm_service.process_data(data)
 
     return jsonify(result)
 
