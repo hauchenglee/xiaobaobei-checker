@@ -1,4 +1,5 @@
 import json
+import re
 
 
 class AIProcess:
@@ -10,17 +11,44 @@ class AIProcess:
 
         # 按句子分隔符将文本分割成句子
         def split_sentences(text):
-            # 使用正则表达式分割句子，保留分隔符
-            import re
-            sentences = re.split('([。，])', text)
-            # 将分隔符和句子组合
-            combined = []
-            for i in range(0, len(sentences) - 1, 2):
-                combined.append(sentences[i] + sentences[i + 1])
-            # 如果最后还有剩余文本(没有分隔符结尾)，也加入
-            if len(sentences) % 2 == 1:
-                combined.append(sentences[-1])
-            return combined
+            # 使用正则表达式查找句子和标点
+            sentence_parts = []
+            current_pos = 0
+
+            # 查找所有标点符号（句号或逗号）
+            punctuation_positions = []
+            for match in re.finditer('[。，]', text):
+                punctuation_positions.append((match.start(), match.group()))
+
+            if not punctuation_positions:
+                # 如果没有找到标点符号，则整个文本作为一个句子
+                return [text]
+
+            # 处理连续标点符号
+            i = 0
+            while i < len(punctuation_positions):
+                # 查找连续标点的结束位置
+                j = i
+                while j + 1 < len(punctuation_positions) and punctuation_positions[j + 1][0] == punctuation_positions[j][0] + 1:
+                    j += 1
+
+                # 获取最后一个标点的位置及其符号
+                end_pos, end_punct = punctuation_positions[j]
+
+                # 添加从当前位置到标点符号的句子
+                sentence = text[current_pos:end_pos + 1]  # 包含标点符号
+                if sentence:
+                    sentence_parts.append(sentence)
+
+                # 更新当前位置
+                current_pos = end_pos + 1
+                i = j + 1
+
+            # 添加最后一个句子（如果有）
+            if current_pos < len(text):
+                sentence_parts.append(text[current_pos:])
+
+            return sentence_parts
 
         # 分割原文和修正后的文本
         original_sentences = split_sentences(original_text)
