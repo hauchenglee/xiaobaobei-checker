@@ -163,13 +163,12 @@ class AIService:
 # 处理优先级
 
 1. 优先匹配自定义词库：若文本中存在`terms`中的词汇，直接替换（即使单字正确）
-2. 应用数字使用原则：数字转换需同时符合：①类别归属正确 ②格式规范（如千分位、单位间距）
+2. 应用数字使用原则：数字转换需符合类别归属正确
 3. 通用规则检查：未匹配`terms`时，应用形近/同音字修正
 
 # 严格约束
 
-- 仅输出JSON格式，禁用Markdown
-- 错误必须符合Schema定义
+- 输出必须符合JSON Schema定义
 - 自定义词库优先于数字使用原则与通用规则
 
 # 输入输出规范
@@ -210,8 +209,7 @@ class AIService:
 ```json
 {
   "article": "该案件依第3階段办理，请参照事务管理手册第50点。如果您是平果公司的員工，可以申請育兒津鐵。",
-  "terms": ["設籍並居住", "育兒津貼"],
-  "is_ai": true
+  "terms": ["設籍並居住", "育兒津貼"]
 }
 ```
 
@@ -237,7 +235,7 @@ class AIService:
         client = PoeApi(tokens=cookies)
 
         content = self.prompt + f"{data}"
-        need_chat_code = False  # 是否要连续对话
+        need_chat_code = True  # 是否要连续对话
 
         if need_chat_code:
             chat_code = None
