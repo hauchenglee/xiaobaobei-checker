@@ -6,69 +6,6 @@ class AIProcess:
     def __init__(self):
         pass
 
-    # 用语类别：代号(码)、国民身份证统一编号、编号、发文字号
-    # 用法举例：
-    # ISBN 988-133-005-1
-    # M234567890
-    # 附表(件)1
-    # 院台秘字第0930086517号
-    # 台79内字第095512号
-    # 用语类别：序数
-    # 用法举例：
-    # 第4届第6会期
-    # 第1阶段
-    # 第1优先
-    # 第2次
-    # 第3名
-    # 第4季
-    # 第5会议室
-    # 第6次会议纪录
-    # 第7组
-    # 用语类别：日期、时间
-    # 用法舉例：
-    # 民国93年7月8日
-    # 93年度
-    # 21世纪
-    # 公元2000年
-    # 7时50分
-    # 挑战2008：国家发展重点计划
-    # 520就职典礼
-    # 72水灾
-    # 921大地震
-    # 911恐怖事件
-    # 228事件
-    # 38妇女节
-    # 延后3周办理
-    # 用语类别：电话、传真
-    # 用法舉例：
-    # (02)3356-6500
-    # 用语类别：邮递区号、门牌号码
-    # 用法舉例：
-    # 100台北市中正区忠孝东路1段2号3楼304室
-    # 用语类别：计量单位
-    # 用法舉例：
-    # 150公分
-    # 35公斤
-    # 30度
-    # 2万元
-    # 5角
-    # 35立方公尺
-    # 7.36公顷
-    # 土地1.5笔
-    # 用语类别：统计数据(如百分比、金额、人数、比数等)
-    # 用法舉例：
-    # 80%
-    # 3.59%
-    # 6亿3,944万2,789元
-    # 639,442,789人
-    # 1:3
-    # 用语类别：法规条项款目、编章节款目之统计数据
-    # 用法舉例：
-    # 事务管理规则共分15编、415条条文
-    # 用语类别：法规内容之引述或摘述
-    # 用法舉例：
-    # 依儿童福利法第44条规定：「违反第2条第2项规定者，处新台币1千元以上3万元以下罚锾。」
-    # 儿童出生后10日内，接生人如未将出生之相关资料通报户政及卫生主管机关备查，依儿童福利法第44条规定，可处1千元以上、3万元以下罚锾。
     def check_number(self, corrected_text):
         pattern_arab_number = r"[1-9]"
         pattern_cn_number = r"[一二三四五六七八九]"
@@ -102,11 +39,28 @@ class AIProcess:
             corrected_text = self.replace_to_arab(corrected_text)
 
         # 第六种：计量单位
-        pattern_unit_cn = r"([零一二三四五六七八九十]+)(公尺|公分|公斤|斤|度|億|萬|千|百|元|筆|人|個|%)"
+        pattern_unit_cn = r"([零一二三四五六七八九十]+)(公尺|公分|公斤|斤|度|億|萬|千|百|元|筆|個|%)"
         if re.match(pattern_unit_cn, corrected_text):
             pass
         else:
             corrected_text = self.replace_to_arab(corrected_text)
+
+        # 转换中文
+        # 针对 星期、週和初 的规则
+        # 星期一~星期六
+        pattern_weekday_cn = r"星期[1-6]"
+        # 週一~週六
+        pattern_zhounum_cn = r"週[1-6]"
+        # 初一到初六
+        pattern_chu_cn = r"初[1-6]"
+
+        # 如果匹配到规则，将数字转换为中文
+        if re.search(pattern_weekday_cn, corrected_text):
+            corrected_text = re.sub(r"星期([1-6])", lambda m: f"星期{self.replace_to_cn(m.group(1))}", corrected_text)
+        elif re.search(pattern_zhounum_cn, corrected_text):
+            corrected_text = re.sub(r"週([1-6])", lambda m: f"週{self.replace_to_cn(m.group(1))}", corrected_text)
+        elif re.search(pattern_chu_cn, corrected_text):
+            corrected_text = re.sub(r"初([1-6])", lambda m: f"初{self.replace_to_cn(m.group(1))}", corrected_text)
 
         return corrected_text
 
@@ -116,7 +70,6 @@ class AIProcess:
             '五': '5', '六': '6', '七': '7', '八': '8', '九': '9'
         }
 
-        """将匹配的错误pattern替换为正确pattern"""
         corrected_text = ''.join([chinese_to_arabic[char] if char in chinese_to_arabic else char for char in corrected_text])
         return corrected_text
 
@@ -126,7 +79,6 @@ class AIProcess:
             '5': '五', '6': '六', '7': '七', '8': '八', '9': '九'
         }
 
-        # 遍历字符串并替换阿拉伯数字为对应的中文数字
         corrected_text = ''.join([arabic_to_chinese[char] if char in arabic_to_chinese else char for char in corrected_text])
         return corrected_text
 
@@ -194,6 +146,7 @@ class AIProcess:
     def process_data(self, article, message):
         response = str(message)
         corrected_text = json.loads(message)['corrected_text']
+        corrected_text = self.check_number(corrected_text)
         all_errors = self.find_differences(article.replace(",", "，"), corrected_text.replace(",", "，"))
         result = {
             "status": "success",
