@@ -18,15 +18,11 @@ class AIProcess:
         # Arab第二种：序数
         pattern_ordinal_cn = r"第[零一二三四五六七八九十]+"
         if re.match(pattern_ordinal_cn, corrected_text):
-            pass
-        else:
             corrected_text = self.replace_to_arab(corrected_text)
 
         # 第三种：日期、时间
         pattern_datetime_cn = r"([零一二三四五六七八九十]+)(年|月|日|世紀|世纪|時|时|分|秒|週)"
         if re.match(pattern_datetime_cn, corrected_text):
-            pass
-        else:
             corrected_text = self.replace_to_arab(corrected_text)
 
         # 第四种：电话
@@ -34,15 +30,11 @@ class AIProcess:
         # 第五种：地址
         pattern_address_cn = r"([零一二三四五六七八九十]+)樓"
         if re.match(pattern_address_cn, corrected_text):
-            pass
-        else:
             corrected_text = self.replace_to_arab(corrected_text)
 
         # 第六种：计量单位
         pattern_unit_cn = r"([零一二三四五六七八九十]+)(公尺|公分|公斤|斤|度|億|萬|千|百|元|筆|個|%)"
         if re.match(pattern_unit_cn, corrected_text):
-            pass
-        else:
             corrected_text = self.replace_to_arab(corrected_text)
 
         # 转换中文
